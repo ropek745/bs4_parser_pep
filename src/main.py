@@ -23,13 +23,13 @@ def whats_new(session):
     if response is None:
         return
     soup = BeautifulSoup(response.text, features='lxml')
-    main_div = find_tag(soup, 'div', attrs={'id': 'what-s-new-in-python'})
+    main_div = find_tag(soup, 'section', attrs={'id': 'what-s-new-in-python'})
     div_with_ul = find_tag(main_div, 'div', attrs={'class': 'toctree-wrapper'})
     sections_by_python = div_with_ul.find_all(
         'li', attrs={'class': 'toctree-l1'}
     )
 
-    results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
+    results = [('Ссылка на статью', 'Заголовок', 'Редактор, Автор')]
     for section in tqdm(sections_by_python):
         version_a_tag = find_tag(section, 'a')
         version_link = urljoin(whats_new_url, version_a_tag['href'])
@@ -41,7 +41,7 @@ def whats_new(session):
         dl = find_tag(soup, 'dl')
         dl_text = dl.text.replace('\n', ' ')
         results.append(
-            (version_link, h1.text, dl_text)
+            (version_link, h1.text, dl_text, dl_text)
         )
 
     return results
@@ -81,7 +81,7 @@ def download(session):
     if response is None:
         return
     soup = BeautifulSoup(response.text, 'lxml')
-    div = find_tag(soup, 'div', attrs={'class': 'main'})
+    div = find_tag(soup, 'div', attrs={'role': 'main'})
     table = find_tag(div, 'table', attrs={'class': 'docutils'})
     pdf_a4_tag = find_tag(
         table, 'a', attrs={'href': re.compile(r'.+pdf-a4\.zip$')}
