@@ -31,8 +31,13 @@
  ```
  3. Запустить нужную функцию парсера.
  ```
- python main.py whats-new|latest-versions|download|pep
+ python main.py whats-new|latest-versions|download|pep 
  ```
+  - ```whats-new``` — нововведения Python;
+  - ```latest-versions``` — информация о последних версиях;
+  - ```download``` — загрузка документации;
+  - ```pep``` — парсинг информации по каждому PEP.
+
  Опциональные аргументы:
   - ```-c``` | ```--clear-cache``` — очистка кеша;
   - ```-o {pretty,file}``` | ```--output {pretty,file}``` — вывод данных парсинга (таблицей в терминале/файлом).
