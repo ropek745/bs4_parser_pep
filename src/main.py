@@ -1,3 +1,4 @@
+import csv
 import re
 from urllib.parse import urljoin
 import logging
@@ -6,7 +7,11 @@ import requests_cache
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
-from constants import BASE_DIR, MAIN_DOC_URL
+from constants import (
+    BASE_DIR, MAIN_DOC_URL, PEP_URL,
+    EXPECTED_STATUS, STATUS_COUNT,
+    UNEXPECTED_STATUS, PATTERN
+)
 from configs import configure_argument_parser, configure_logging
 from outputs import control_output
 from utils import get_response, find_tag
@@ -36,9 +41,9 @@ def whats_new(session):
         dl = find_tag(soup, 'dl')
         dl_text = dl.text.replace('\n', ' ')
         results.append(
-            (version_link, h1.text, dl.text)
+            (version_link, h1.text, dl_text)
         )
-    
+
     return results
 
 
@@ -76,9 +81,11 @@ def download(session):
     if response is None:
         return
     soup = BeautifulSoup(response.text, 'lxml')
-    # div = find_tag(soup, 'div', attrs={'class': 'main'})
-    table = find_tag(soup, 'table', attrs={'class': 'docutils'})
-    pdf_a4_tag = find_tag(table, 'a', attrs={'href': re.compile(r'.+pdf-a4\.zip$')})
+    div = find_tag(soup, 'div', attrs={'class': 'main'})
+    table = find_tag(div, 'table', attrs={'class': 'docutils'})
+    pdf_a4_tag = find_tag(
+        table, 'a', attrs={'href': re.compile(r'.+pdf-a4\.zip$')}
+    )
     pdf_a4_link = pdf_a4_tag['href']
     archive_url = urljoin(downloads_url, pdf_a4_link)
     filename = archive_url.split('/')[-1]
@@ -91,10 +98,56 @@ def download(session):
     logging.info(f'Архив был загружен и сохранён: {archive_path}')
 
 
+def pep(session):
+    pattern = PATTERN
+    response = session.get(PEP_URL)
+    if response is None:
+        return
+    soup = BeautifulSoup(response.text, 'lxml')
+    section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
+    tbody_tag = find_tag(section_tag, 'tbody')
+    tr_tags = tbody_tag.find_all('tr')
+    for tr_tag in tr_tags:
+        status_in_pep_list = tr_tag.text.split()[0]
+        link = find_tag(tr_tag, 'a')['href']
+        pep_url = urljoin(PEP_URL, link)
+        response = session.get(pep_url)
+        pep_page = BeautifulSoup(response.text, 'lxml')
+        dl_tag = pep_page.find(
+            'dl', attrs={'class': 'rfc2822 field-list simple'}
+        )
+        tag_with_status = dl_tag.find_all('dd', string=re.compile(pattern))
+        for status in tag_with_status:
+            status_text = status.text
+            if len(status_in_pep_list) == 1:
+                STATUS_COUNT[status_text] += 1
+            else:
+                status_in_list = status_in_pep_list[1]
+                if status_text in EXPECTED_STATUS[status_in_list]:
+                    STATUS_COUNT[status_text] += 1
+                else:
+                    logging.info(UNEXPECTED_STATUS.format(
+                        link=pep_url,
+                        status=status_text,
+                        expected_status=EXPECTED_STATUS[status_in_list]
+                    ))
+                    STATUS_COUNT[status.text] += 1
+    filepath = BASE_DIR / 'results' / 'pep_parse_result.csv'
+    with open(filepath, 'w') as csv_file:
+        writer = csv.writer(csv_file, dialect='unix')
+        writer.writerow(['Status', 'Count'])
+        total = 0
+        for status, count in STATUS_COUNT.items():
+            writer.writerow([status, count])
+            total += count
+        writer.writerow(['Total', total])
+
+
 MODE_TO_FUNCTION = {
     'whats-new': whats_new,
     'latest-versions': latest_versions,
     'download': download,
+    'pep': pep
 }
 
 
