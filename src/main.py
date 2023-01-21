@@ -9,11 +9,11 @@ from tqdm import tqdm
 from constants import (
     BASE_DIR, CONNECTION_ERROR_MESSAGE, DOWNLOAD_DIR, DOWNLOADS_URL,
     ERROR_MESSAGE_URL, EXPECTED_STATUS, HEADS_OF_WHATS_NEW_TABLE,
-    HEADS_OF_LATEST_VERSIONS_TABLE, HEADS_OF_PEP_TABLE,
-    LATEST_VERSIONS_ERROR_MESSAGE, MAIN_DOC_URL, PEP_URL, PARSER_ARGS_MESSAGE,
-    PROGRAMM_ERROR_MESSAGE, PARSER_FINISHED, PATTERN_FOR_PEP_PARSE,
-    PATTERN_FOR_LATEST_VERSIONS, RESULT_DOWNLOAD_MESSAGE, START_PARSER_MESSAGE,
-    UNEXPECTED_STATUS, WHATS_NEW_URL,
+    HEADS_OF_LATEST_VERSIONS_TABLE, LATEST_VERSIONS_ERROR_MESSAGE,
+    MAIN_DOC_URL, PEP_URL, PARSER_ARGS_MESSAGE, PROGRAMM_ERROR_MESSAGE,
+    PARSER_FINISHED, PATTERN_FOR_PEP_PARSE, PATTERN_FOR_LATEST_VERSIONS,
+    RESULT_DOWNLOAD_MESSAGE, START_PARSER_MESSAGE, UNEXPECTED_STATUS,
+    WHATS_NEW_URL
 )
 from configs import configure_argument_parser, configure_logging
 from outputs import control_output
@@ -39,7 +39,6 @@ def whats_new(session):
             )
         except ConnectionError:
             logs.append(ERROR_MESSAGE_URL.format(url=version_link))
-            continue
     for log in logs:
         logging.info(log)
     return results
@@ -86,7 +85,7 @@ def pep(session):
     logs = []
     statuses_count = defaultdict(int)
     for tr_tag in tqdm(
-            get_soup(session, PEP_URL).select('#numerical-index tbody tr')
+        get_soup(session, PEP_URL).select('#numerical-index tbody tr')
     ):
         pep_url = urljoin(PEP_URL, find_tag(tr_tag, 'a')['href'])
         try:
@@ -111,7 +110,7 @@ def pep(session):
     for log in logs:
         logging.info(log)
     return [
-        HEADS_OF_PEP_TABLE,
+        ('Статус', 'Количество', ),
         *statuses_count.items(),
         ('Total', sum(statuses_count.values()))
     ]

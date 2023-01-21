@@ -1,7 +1,6 @@
 from pathlib import Path
 from urllib.parse import urljoin
 
-HEADS_OF_PEP_TABLE = ('Статус', 'Количество', )
 HEADS_OF_LATEST_VERSIONS_TABLE = (
     'Ссылка на статью', 'Заголовок', 'Редактор, автор'
 )
